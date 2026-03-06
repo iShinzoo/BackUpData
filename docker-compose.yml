@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: backup-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: backup
+      POSTGRES_PASSWORD: backup
+      POSTGRES_DB: testdb
+    ports:
+      - "5432:5432"
+
+  mysql:
+    image: mysql:8
+    container_name: backup-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: testdb
+    ports:
+      - "3306:3306"
