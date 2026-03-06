@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"github.com/iShinzoo/BackUpData/cmd/backup-cli/cmd"
+)
 
 func main() {
-	fmt.Println("Backup Data CLI Starting ...")
+	cmd.Execute()
 }
