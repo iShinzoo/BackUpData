@@ -3,6 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/iShinzoo/BackUpData/internal/core"
 	"github.com/iShinzoo/BackUpData/internal/core/worker"
@@ -14,7 +17,13 @@ var backupCmd = &cobra.Command{
 	Short: "Execute database backup",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		ctx := context.Background()
+		ctx, cancel := signal.NotifyContext(
+			context.Background(),
+			os.Interrupt,
+			syscall.SIGTERM,
+		)
+
+		defer cancel()
 
 		jobs := make(chan core.BackupJob, 10)
 		results := make(chan core.BackupResult)
