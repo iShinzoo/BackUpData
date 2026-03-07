@@ -20,6 +20,8 @@ func (p *WorkerPool) Run(
 
 	var wg sync.WaitGroup
 
+	limiter := make(chan struct{}, 2)
+
 	for i := 0; i < p.Workers; i++ {
 		wg.Add(1)
 
@@ -31,8 +33,13 @@ func (p *WorkerPool) Run(
 				select {
 				case <-ctx.Done():
 					return
+
 				default:
+					// acquire slot
+					limiter <- struct{}{}
 					result := handler(ctx, job)
+					// release slot
+					<-limiter
 					results <- result
 				}
 			}
