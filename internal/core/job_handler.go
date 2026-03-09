@@ -1,21 +1,16 @@
 package core
 
-import (
-	"context"
-	"fmt"
-	"time"
-)
+import "context"
 
-func BackupHandler(ctx context.Context, job BackupJob) BackupResult {
+type BackupExecutor interface {
+	Run(ctx context.Context, job BackupJob) BackupResult
+}
 
-	fmt.Println("Starting backup:", job.Name)
+func BackupHandler(
+	ctx context.Context,
+	job BackupJob,
+	executor BackupExecutor,
+) BackupResult {
 
-	time.Sleep(3 * time.Second)
-
-	fmt.Println("Finished backup:", job.Name)
-
-	return BackupResult{
-		Name:   job.Name,
-		Status: "success",
-	}
+	return executor.Run(ctx, job)
 }
