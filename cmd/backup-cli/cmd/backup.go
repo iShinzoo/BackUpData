@@ -41,13 +41,30 @@ var backupCmd = &cobra.Command{
 
 		go pool.Run(ctx, jobs, results, handler)
 
-		jobs <- core.BackupJob{Name: "db1"}
-		jobs <- core.BackupJob{Name: "db2"}
-		jobs <- core.BackupJob{Name: "db3"}
+		jobs <- core.BackupJob{
+			Name: "db1",
+			URL:  "postgres://backup:backup@localhost:5432/testdb",
+		}
+
+		jobs <- core.BackupJob{
+			Name: "db2",
+			URL:  "postgres://backup:backup@localhost:5432/testdb",
+		}
+
+		jobs <- core.BackupJob{
+			Name: "db3",
+			URL:  "postgres://backup:backup@localhost:5432/testdb",
+		}
 
 		close(jobs)
 
 		for r := range results {
+
+			if r.Error != nil {
+				fmt.Println("Backup FAILED:", r.Name, r.Error)
+				continue
+			}
+
 			fmt.Println("Backup finished:", r.Name)
 		}
 	},
