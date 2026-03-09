@@ -26,6 +26,31 @@ var backupCmd = &cobra.Command{
 
 		defer cancel()
 
+		// ---- S3 TEST START ----
+
+		// ctxTest := context.Background()
+
+		// s3Store, err := s3.New("backup-cli-test-bucket")
+		// if err != nil {
+		// 	panic(err)
+		// }
+
+		// fmt.Println("S3 client initialized successfully")
+
+		// file, err := os.Open("test.sql")
+		// if err != nil {
+		// 	panic(err)
+		// }
+
+		// err = s3Store.Save(ctxTest, "test.sql", file)
+		// if err != nil {
+		// 	panic(err)
+		// }
+
+		// fmt.Println("File uploaded successfully to S3")
+
+		// ---- S3 TEST END ----
+
 		jobs := make(chan core.BackupJob, 10)
 		results := make(chan core.BackupResult)
 
