@@ -9,6 +9,7 @@ import (
 
 	"github.com/iShinzoo/BackUpData/internal/core"
 	"github.com/iShinzoo/BackUpData/internal/core/worker"
+	"github.com/iShinzoo/BackUpData/internal/db/postgres"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +33,13 @@ var backupCmd = &cobra.Command{
 			Workers: 3,
 		}
 
-		go pool.Run(ctx, jobs, results, core.BackupHandler)
+		pgExecutor := postgres.Executor{}
+
+		handler := func(ctx context.Context, job core.BackupJob) core.BackupResult {
+			return core.BackupHandler(ctx, job, &pgExecutor)
+		}
+
+		go pool.Run(ctx, jobs, results, handler)
 
 		jobs <- core.BackupJob{Name: "db1"}
 		jobs <- core.BackupJob{Name: "db2"}
