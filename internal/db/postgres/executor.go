@@ -37,6 +37,7 @@ func (e *Executor) Run(
 			Error: err,
 		}
 	}
+	defer fileWriter.Close()
 
 	err = compression.CompressStream(dumpStream, fileWriter)
 	if err != nil {
