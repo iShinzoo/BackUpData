@@ -34,13 +34,23 @@ func (s *S3Storage) Save(
 	r io.Reader,
 ) error {
 
-	_, err := s.client.PutObject(
-		ctx,
-		&s3.PutObjectInput{
-			Bucket: &s.bucket,
-			Key:    &name,
-			Body:   r,
-		},
-	)
+	var err error
+
+	for i := 0; i < 3; i++ {
+
+		_, err := s.client.PutObject(
+			ctx,
+			&s3.PutObjectInput{
+				Bucket: &s.bucket,
+				Key:    &name,
+				Body:   r,
+			},
+		)
+
+		if err != nil {
+			return nil
+		}
+	}
+
 	return err
 }
