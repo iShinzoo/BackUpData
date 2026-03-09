@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -35,6 +36,9 @@ func (s *S3Storage) Save(
 ) error {
 
 	var err error
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
 
 	for i := 0; i < 3; i++ {
 
