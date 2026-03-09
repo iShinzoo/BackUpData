@@ -19,3 +19,7 @@ func Save(ctx context.Context, path string, r io.Reader) error {
 
 	return err
 }
+
+func CreateFile(path string) (*os.File, error) {
+	return os.Create(path)
+}
