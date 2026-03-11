@@ -10,6 +10,7 @@ import (
 	"github.com/iShinzoo/BackUpData/internal/core"
 	"github.com/iShinzoo/BackUpData/internal/core/worker"
 	"github.com/iShinzoo/BackUpData/internal/db/postgres"
+	"github.com/iShinzoo/BackUpData/internal/notification/slack"
 	"github.com/spf13/cobra"
 )
 
@@ -60,8 +61,15 @@ var backupCmd = &cobra.Command{
 
 		pgExecutor := postgres.Executor{}
 
+		var notifier core.Notifier
+
+		webhook := os.Getenv("SLACK_WEBHOOK_URL")
+		if webhook != "" {
+			notifier = slack.New(webhook)
+		}
+
 		handler := func(ctx context.Context, job core.BackupJob) core.BackupResult {
-			return core.BackupHandler(ctx, job, &pgExecutor)
+			return core.BackupHandler(ctx, job, &pgExecutor, notifier)
 		}
 
 		go pool.Run(ctx, jobs, results, handler)
