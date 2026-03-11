@@ -12,5 +12,5 @@ type BackupResult struct {
 	Status   string
 	Error    error
 	Duration time.Duration
-	size     int64
+	Size     int64
 }
