@@ -38,24 +38,34 @@ func (s *SlackNotifier) Notify(ctx context.Context, msg string) error {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		s.webhookURL,
-		bytes.NewBuffer(body),
-	)
-	if err != nil {
-		return err
+	var lastErr error
+
+	for i := 0; i < 3; i++ {
+
+		req, err := http.NewRequestWithContext(
+			ctx,
+			http.MethodPost,
+			s.webhookURL,
+			bytes.NewBuffer(body),
+		)
+
+		if err != nil {
+			return err
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := s.client.Do(req)
+
+		if err != nil && resp.StatusCode == http.StatusOK {
+			resp.Body.Close()
+			return nil
+		}
+
+		lastErr = err
+
+		time.Sleep(2 * time.Second)
+
 	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	return nil
+	return lastErr
 }
