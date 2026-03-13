@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/iShinzoo/BackUpData/internal/scheduler"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +12,15 @@ var scheduleCmd = &cobra.Command{
 	Short: "Run Scheduled backups",
 	Run: func(cmd *cobra.Command, agrs []string) {
 
-		fmt.Println("Scheduler running...")
+		s := scheduler.New()
+
+		s.AddJob("0 */6 * * *", func() {
+			fmt.Println("Scheduler running...")
+		})
+
+		s.Start()
+
+		select {}
 	},
 }
 
