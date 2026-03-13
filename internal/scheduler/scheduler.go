@@ -12,7 +12,7 @@ type Scheduler struct {
 
 func New() *Scheduler {
 
-	c := cron.New()
+	c := cron.New(cron.WithSeconds())
 
 	return &Scheduler{
 		cron: c,
