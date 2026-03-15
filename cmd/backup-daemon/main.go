@@ -10,12 +10,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/iShinzoo/BackUpData/pkg/config"
 	pb "github.com/iShinzoo/BackUpData/proto"
 	"google.golang.org/grpc"
 )
 
 type server struct {
 	pb.UnimplementedBackupServiceServer
+	cfg *config.Config
 }
 
 func (s *server) StreamProgress(
@@ -63,6 +65,15 @@ func loggingInterceptor(
 
 func main() {
 
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal("failed to load config:", err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		log.Fatal("invalid configuration:", err)
+	}
+
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
 		os.Interrupt,
@@ -80,7 +91,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pb.RegisterBackupServiceServer(grpcServer, &server{})
+	pb.RegisterBackupServiceServer(grpcServer, &server{
+		cfg: cfg,
+	})
 
 	go func() {
 		log.Println("Backup Daemon running on port 50051")

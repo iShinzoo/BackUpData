@@ -1,6 +1,10 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"errors"
+
+	"github.com/spf13/viper"
+)
 
 type Config struct {
 	PostgresURL    string
@@ -23,4 +27,21 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func (c *Config) Validate() error {
+
+	if c.PostgresURL == "" {
+		return errors.New("POSTGRES_URL is required")
+	}
+
+	if c.BackupDir == "" {
+		return errors.New("BACKUP_DIR is required")
+	}
+
+	if c.SlackWebhook == "" {
+		return errors.New("SLACK_WEBHOOK_URL is required")
+	}
+
+	return nil
 }
