@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	pb "github.com/iShinzoo/BackUpData/proto"
@@ -23,9 +26,13 @@ func (s *server) StreamProgress(
 	for i := 0; i < 5; i++ {
 		msg := fmt.Sprintf("Progress %d%%", i*20)
 
-		stream.Send(&pb.ProgressUpdate{
+		err := stream.Send(&pb.ProgressUpdate{
 			Message: msg,
 		})
+
+		if err != nil {
+			return err
+		}
 
 		time.Sleep(time.Second)
 	}
@@ -56,18 +63,35 @@ func loggingInterceptor(
 
 func main() {
 
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+
+	defer stop()
 
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(loggingInterceptor),
 	)
 
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	pb.RegisterBackupServiceServer(grpcServer, &server{})
 
-	log.Println("Backup Daemon running on port 50051")
+	go func() {
+		log.Println("Backup Daemon running on port 50051")
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	grpcServer.Serve(lis)
+	<-ctx.Done()
+
+	log.Println("Shutdown signal received")
+
+	grpcServer.GracefulStop()
 }
