@@ -42,6 +42,18 @@ func (s *server) RunBackup(ctx context.Context, req *pb.BackupRequest) (*pb.Back
 	}, nil
 }
 
+func loggingInterceptor(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (interface{}, error) {
+
+	log.Println("RPC called:", info.FullMethod)
+
+	return handler(ctx, req)
+}
+
 func main() {
 
 	lis, err := net.Listen("tcp", ":50051")
@@ -49,7 +61,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(loggingInterceptor),
+	)
 
 	pb.RegisterBackupServiceServer(grpcServer, &server{})
 
