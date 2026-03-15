@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package backup;
 
-option go_package = "backup-system/proto";
+option go_package = "github.com/iShinzoo/BackUpData/proto";
 
 service BackupService {
 
