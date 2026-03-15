@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
+	"time"
 
 	pb "github.com/iShinzoo/BackUpData/proto"
 	"google.golang.org/grpc"
@@ -11,6 +13,24 @@ import (
 
 type server struct {
 	pb.UnimplementedBackupServiceServer
+}
+
+func (s *server) StreamProgress(
+	req *pb.BackupRequest,
+	stream pb.BackupService_StreamProgressServer,
+) error {
+
+	for i := 0; i < 5; i++ {
+		msg := fmt.Sprintf("Progress %d%%", i*20)
+
+		stream.Send(&pb.ProgressUpdate{
+			Message: msg,
+		})
+
+		time.Sleep(time.Second)
+	}
+
+	return nil
 }
 
 func (s *server) RunBackup(ctx context.Context, req *pb.BackupRequest) (*pb.BackupResponse, error) {
