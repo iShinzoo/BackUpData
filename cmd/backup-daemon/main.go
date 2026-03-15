@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -10,14 +9,19 @@ import (
 	"syscall"
 	"time"
 
+	"fmt"
+
 	"github.com/iShinzoo/BackUpData/pkg/config"
+	"github.com/iShinzoo/BackUpData/pkg/logger"
 	pb "github.com/iShinzoo/BackUpData/proto"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 type server struct {
 	pb.UnimplementedBackupServiceServer
-	cfg *config.Config
+	cfg    *config.Config
+	logger *zap.Logger
 }
 
 func (s *server) StreamProgress(
@@ -26,10 +30,14 @@ func (s *server) StreamProgress(
 ) error {
 
 	for i := 0; i < 5; i++ {
-		msg := fmt.Sprintf("Progress %d%%", i*20)
+
+		s.logger.Info(
+			"backup progress",
+			zap.Int("progress_percent", i*20),
+		)
 
 		err := stream.Send(&pb.ProgressUpdate{
-			Message: msg,
+			Message: fmt.Sprintf("Progress: %d%%", i*20),
 		})
 
 		if err != nil {
@@ -44,7 +52,10 @@ func (s *server) StreamProgress(
 
 func (s *server) RunBackup(ctx context.Context, req *pb.BackupRequest) (*pb.BackupResponse, error) {
 
-	log.Println("Backup requested for:", req.Database)
+	s.logger.Info(
+		"backup requested",
+		zap.String("database", req.Database),
+	)
 
 	return &pb.BackupResponse{
 		Status: "backup started",
@@ -58,7 +69,12 @@ func loggingInterceptor(
 	handler grpc.UnaryHandler,
 ) (interface{}, error) {
 
-	log.Println("RPC called:", info.FullMethod)
+	logg, _ := logger.New()
+
+	logg.Info(
+		"grpc request received",
+		zap.String("method", info.FullMethod),
+	)
 
 	return handler(ctx, req)
 }
@@ -73,6 +89,13 @@ func main() {
 	if err := cfg.Validate(); err != nil {
 		log.Fatal("invalid configuration:", err)
 	}
+
+	logg, err := logger.New()
+	if err != nil {
+		panic(err)
+	}
+
+	defer logg.Sync()
 
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
@@ -92,7 +115,8 @@ func main() {
 	}
 
 	pb.RegisterBackupServiceServer(grpcServer, &server{
-		cfg: cfg,
+		cfg:    cfg,
+		logger: logg,
 	})
 
 	go func() {
@@ -104,7 +128,7 @@ func main() {
 
 	<-ctx.Done()
 
-	log.Println("Shutdown signal received")
+	logg.Info("Shutdown signal received")
 
 	grpcServer.GracefulStop()
 }
