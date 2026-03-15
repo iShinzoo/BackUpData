@@ -16,7 +16,7 @@ FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=builder /app/bacup-daemon .
+COPY --from=builder /app/backup-daemon .
 
 EXPOSE 50051
 
