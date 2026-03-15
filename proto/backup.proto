@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package backup;
+
+option go_package = "backup-system/proto";
+
+service BackupService {
+
+    rpc RunBackup (BackupRequest) returns (BackupResponse);
+
+    rpc StreamProgress (BackupRequest) returns (stream ProgressUpdate);
+}
+
+message BackupRequest {
+    string database = 1;
+}
+
+message BackupResponse {
+    string status = 1;
+}
+
+message ProgressUpdate {
+    string message = 1;
+}
