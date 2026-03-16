@@ -11,6 +11,10 @@ import (
 
 	"fmt"
 
+	"github.com/iShinzoo/BackUpData/internal/core"
+	"github.com/iShinzoo/BackUpData/internal/core/worker"
+	"github.com/iShinzoo/BackUpData/internal/db/postgres"
+	"github.com/iShinzoo/BackUpData/internal/notification/slack"
 	"github.com/iShinzoo/BackUpData/pkg/config"
 	"github.com/iShinzoo/BackUpData/pkg/logger"
 	pb "github.com/iShinzoo/BackUpData/proto"
@@ -55,6 +59,54 @@ func (s *server) RunBackup(ctx context.Context, req *pb.BackupRequest) (*pb.Back
 
 	s.logger.Info(
 		"backup requested",
+		zap.String("database", req.Database),
+	)
+
+	jobs := make(chan core.BackupJob, 10)
+	results := make(chan core.BackupResult)
+
+	pool := worker.WorkerPool{
+		Workers: 3,
+	}
+
+	pgExecutor := postgres.Executor{}
+
+	var notifier core.Notifier
+
+	if s.cfg.SlackWebhook != "" {
+		notifier = slack.New(s.cfg.SlackWebhook)
+	}
+
+	handler := func(ctx context.Context, job core.BackupJob) core.BackupResult {
+		return core.BackupHandler(ctx, job, &pgExecutor, notifier)
+	}
+
+	go pool.Run(ctx, jobs, results, handler)
+
+	jobs <- core.BackupJob{
+		Name: req.Database,
+		URL:  s.cfg.PostgresURL,
+	}
+
+	close(jobs)
+
+	res := <-results
+
+	if res.Error != nil {
+
+		s.logger.Error(
+			"backup failed",
+			zap.String("database", req.Database),
+			zap.Error(res.Error),
+		)
+
+		return &pb.BackupResponse{
+			Status: "backup failed",
+		}, res.Error
+	}
+
+	s.logger.Info(
+		"backup completed",
 		zap.String("database", req.Database),
 	)
 
