@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/iShinzoo/BackUpData/internal/metrics"
 )
 
 type BackupExecutor interface {
@@ -27,6 +29,8 @@ func BackupHandler(
 
 	if result.Error != nil {
 
+		metrics.BackupFailure.Inc()
+
 		msg = fmt.Sprintf(
 			"❌ Backup Failed\nDatabase: %s\nError: %v",
 			job.Name,
@@ -34,6 +38,8 @@ func BackupHandler(
 		)
 
 	} else {
+
+		metrics.BackupSuccess.Inc()
 
 		msg = fmt.Sprintf(
 			"✅ Backup Completed\nDatabase: %s\nDuration: %s\nSize: %d bytes",

@@ -14,6 +14,7 @@ import (
 	"github.com/iShinzoo/BackUpData/internal/core"
 	"github.com/iShinzoo/BackUpData/internal/core/worker"
 	"github.com/iShinzoo/BackUpData/internal/db/postgres"
+	"github.com/iShinzoo/BackUpData/internal/metrics"
 	"github.com/iShinzoo/BackUpData/internal/notification/slack"
 	"github.com/iShinzoo/BackUpData/pkg/config"
 	"github.com/iShinzoo/BackUpData/pkg/logger"
@@ -149,6 +150,8 @@ func main() {
 	if err := cfg.Validate(); err != nil {
 		logg.Fatal("invalid configuration:", zap.Error(err))
 	}
+
+	metrics.Register()
 
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
