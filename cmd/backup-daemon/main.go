@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +14,7 @@ import (
 	"github.com/iShinzoo/BackUpData/pkg/config"
 	"github.com/iShinzoo/BackUpData/pkg/logger"
 	pb "github.com/iShinzoo/BackUpData/proto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -81,21 +82,21 @@ func loggingInterceptor(
 
 func main() {
 
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatal("failed to load config:", err)
-	}
-
-	if err := cfg.Validate(); err != nil {
-		log.Fatal("invalid configuration:", err)
-	}
-
 	logg, err := logger.New()
 	if err != nil {
 		panic(err)
 	}
 
 	defer logg.Sync()
+
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		logg.Fatal("failed to load config:", zap.Error(err))
+	}
+
+	if err := cfg.Validate(); err != nil {
+		logg.Fatal("invalid configuration:", zap.Error(err))
+	}
 
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
@@ -111,7 +112,7 @@ func main() {
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		log.Fatal(err)
+		logg.Fatal("", zap.Error(err))
 	}
 
 	pb.RegisterBackupServiceServer(grpcServer, &server{
@@ -120,9 +121,19 @@ func main() {
 	})
 
 	go func() {
-		log.Println("Backup Daemon running on port 50051")
+		logg.Info("Backup Daemon running on port 50051")
 		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatal(err)
+			logg.Fatal("", zap.Error(err))
+		}
+	}()
+
+	go func() {
+		logg.Info("Prometheus metrics exposed on :9090/metrics")
+
+		http.Handle("/metrics", promhttp.Handler())
+
+		if err := http.ListenAndServe(":9090", nil); err != nil {
+			logg.Fatal("metrics server error", zap.Error(err))
 		}
 	}()
 
