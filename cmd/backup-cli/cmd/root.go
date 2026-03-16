@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/iShinzoo/BackUpData/pkg/logger"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 var rootCmd = &cobra.Command{
@@ -13,8 +14,16 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
+
+	logg, err := logger.New()
+	if err != nil {
+		panic(err)
+	}
+
+	defer logg.Sync()
+
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		logg.Error("operation failed", zap.Error(err))
 		os.Exit(1)
 	}
 }

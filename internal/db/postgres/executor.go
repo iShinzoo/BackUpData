@@ -2,11 +2,12 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/iShinzoo/BackUpData/internal/compression"
 	"github.com/iShinzoo/BackUpData/internal/core"
 	"github.com/iShinzoo/BackUpData/internal/storage/local"
+	"github.com/iShinzoo/BackUpData/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type Executor struct{}
@@ -16,7 +17,12 @@ func (e *Executor) Run(
 	job core.BackupJob,
 ) core.BackupResult {
 
-	fmt.Println("Starting backup:", job.Name)
+	logg, err := logger.New()
+	if err != nil {
+		panic(err)
+	}
+
+	logg.Info("Starting backup:", zap.String("job_name", job.Name))
 
 	pg := New(job.URL)
 
@@ -47,7 +53,7 @@ func (e *Executor) Run(
 		}
 	}
 
-	fmt.Println("Finished backup:", job.Name)
+	logg.Info("Finished backup:", zap.String("job_name", job.Name))
 
 	return core.BackupResult{
 		Name:   job.Name,

@@ -1,8 +1,7 @@
 package scheduler
 
 import (
-	"log"
-
+	"github.com/iShinzoo/BackUpData/pkg/logger"
 	"github.com/robfig/cron/v3"
 )
 
@@ -28,12 +27,24 @@ func (s *Scheduler) AddJob(schedule string, job func()) error {
 
 func (s *Scheduler) Start() {
 
-	log.Println("Schedular Started...")
+	logg, err := logger.New()
+	if err != nil {
+		panic(err)
+	}
+
+	logg.Info("Schedular Started...")
 
 	s.cron.Start()
 }
 
 func (s *Scheduler) Stop() {
+
+	logg, err := logger.New()
+	if err != nil {
+		panic(err)
+	}
+
+	logg.Info("Schedular Stopping...")
 
 	s.cron.Stop()
 
