@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
 	"github.com/iShinzoo/BackUpData/internal/compression"
 	"github.com/iShinzoo/BackUpData/internal/core"
@@ -34,15 +36,33 @@ func (e *Executor) Run(
 		}
 	}
 
-	filepath := "./backups/" + job.Name + ".sql.gz"
-
-	fileWriter, err := local.CreateFile(filepath)
+	wd, err := os.Getwd()
 	if err != nil {
 		return core.BackupResult{
 			Name:  job.Name,
 			Error: err,
 		}
 	}
+
+	backupDir := filepath.Join(wd, "backups")
+
+	if err := os.MkdirAll(backupDir, os.ModePerm); err != nil {
+		return core.BackupResult{
+			Name:  job.Name,
+			Error: err,
+		}
+	}
+
+	filePath := filepath.Join(backupDir, job.Name+".sql.gz")
+
+	fileWriter, err := local.CreateFile(filePath)
+	if err != nil {
+		return core.BackupResult{
+			Name:  job.Name,
+			Error: err,
+		}
+	}
+
 	defer fileWriter.Close()
 
 	err = compression.CompressStream(dumpStream, fileWriter)
