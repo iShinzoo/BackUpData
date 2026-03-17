@@ -6,28 +6,36 @@ import (
 	"os/exec"
 )
 
-func (p *PostgresAdapter) RunDump(ctx context.Context, dbURL string) (io.ReadCloser, error) {
+func (p *PostgresAdapter) RunDump(ctx context.Context, dbURL string) (io.ReadCloser, *exec.Cmd, error) {
 
 	cmd := exec.CommandContext(
 		ctx,
 		"docker",
 		"exec",
+		"-i",
 		"backup-postgres",
 		"pg_dump",
-		dbURL,
+		"-U",
+		"backup",
+		"testdb",
 	)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	err = cmd.Start()
+	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	go cmd.Wait()
+	if err := cmd.Start(); err != nil {
+		return nil, nil, err
+	}
 
-	return stdout, nil
+	// log pg_dump errors if any
+	go io.Copy(io.Discard, stderr)
+
+	return stdout, cmd, nil
 }

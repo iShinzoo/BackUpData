@@ -28,7 +28,7 @@ func (e *Executor) Run(
 
 	pg := New(job.URL)
 
-	dumpStream, err := pg.RunDump(ctx, job.URL)
+	dumpStream, cmd, err := pg.RunDump(ctx, job.URL)
 	if err != nil {
 		return core.BackupResult{
 			Name:  job.Name,
@@ -73,6 +73,14 @@ func (e *Executor) Run(
 		}
 	}
 
+	dumpStream.Close()
+
+	if err := cmd.Wait(); err != nil {
+		return core.BackupResult{
+			Name:  job.Name,
+			Error: err,
+		}
+	}
 	logg.Info("Finished backup:", zap.String("job_name", job.Name))
 
 	return core.BackupResult{
