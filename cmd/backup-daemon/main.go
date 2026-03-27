@@ -85,8 +85,12 @@ func (s *server) RunBackup(ctx context.Context, req *pb.BackupRequest) (*pb.Back
 	go pool.Run(ctx, jobs, results, handler)
 
 	jobs <- core.BackupJob{
-		Name: req.Database,
-		URL:  s.cfg.PostgresURL,
+		Name: fmt.Sprintf(
+			"%s-%s",
+			req.Database,
+			time.Now().Format("20060102-150405"),
+		),
+		URL: s.cfg.PostgresURL,
 	}
 
 	close(jobs)
