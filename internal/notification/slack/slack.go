@@ -29,6 +29,10 @@ func New(webhook string) *SlackNotifier {
 
 func (s *SlackNotifier) Notify(ctx context.Context, msg string) error {
 
+	if s == nil || s.webhookURL == "" {
+		return nil
+	}
+
 	payload := slackMessage{
 		Text: msg,
 	}
