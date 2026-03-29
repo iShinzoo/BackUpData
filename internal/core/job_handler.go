@@ -17,6 +17,7 @@ func BackupHandler(
 	job BackupJob,
 	executor BackupExecutor,
 	notifer Notifier,
+	storage Storage,
 ) BackupResult {
 
 	start := time.Now()
