@@ -16,6 +16,7 @@ import (
 	"github.com/iShinzoo/BackUpData/internal/db/postgres"
 	"github.com/iShinzoo/BackUpData/internal/metrics"
 	"github.com/iShinzoo/BackUpData/internal/notification/slack"
+	"github.com/iShinzoo/BackUpData/internal/storage/s3"
 	"github.com/iShinzoo/BackUpData/pkg/config"
 	"github.com/iShinzoo/BackUpData/pkg/logger"
 	pb "github.com/iShinzoo/BackUpData/proto"
@@ -70,7 +71,12 @@ func (s *server) RunBackup(ctx context.Context, req *pb.BackupRequest) (*pb.Back
 		Workers: 3,
 	}
 
-	pgExecutor := postgres.Executor{}
+	s3Store, err := s3.New("backup-bucket")
+	if err != nil {
+		s.logger.Fatal("failed to init s3", zap.Error(err))
+	}
+
+	pgExecutor := postgres.NewExecutor(s3Store)
 
 	var notifier core.Notifier
 
@@ -79,7 +85,7 @@ func (s *server) RunBackup(ctx context.Context, req *pb.BackupRequest) (*pb.Back
 	}
 
 	handler := func(ctx context.Context, job core.BackupJob) core.BackupResult {
-		return core.BackupHandler(ctx, job, &pgExecutor, notifier)
+		return core.BackupHandler(ctx, job, pgExecutor, notifier, s3Store)
 	}
 
 	go pool.Run(ctx, jobs, results, handler)
