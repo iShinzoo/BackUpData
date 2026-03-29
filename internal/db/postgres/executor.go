@@ -2,17 +2,23 @@ package postgres
 
 import (
 	"context"
-	"os"
-	"path/filepath"
+	"io"
 
 	"github.com/iShinzoo/BackUpData/internal/compression"
 	"github.com/iShinzoo/BackUpData/internal/core"
-	"github.com/iShinzoo/BackUpData/internal/storage/local"
 	"github.com/iShinzoo/BackUpData/pkg/logger"
 	"go.uber.org/zap"
 )
 
-type Executor struct{}
+type Executor struct {
+	storage core.Storage
+}
+
+func NewExecutor(storage core.Storage) *Executor {
+	return &Executor{
+		storage: storage,
+	}
+}
 
 func (e *Executor) Run(
 	ctx context.Context,
@@ -36,36 +42,19 @@ func (e *Executor) Run(
 		}
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return core.BackupResult{
-			Name:  job.Name,
-			Error: err,
+	pr, pw := io.Pipe()
+
+	go func() {
+		defer pw.Close()
+
+		err := compression.CompressStream(dumpStream, pw)
+		if err != nil {
+			pw.CloseWithError(err)
+			return
 		}
-	}
+	}()
 
-	backupDir := filepath.Join(wd, "backups")
-
-	if err := os.MkdirAll(backupDir, os.ModePerm); err != nil {
-		return core.BackupResult{
-			Name:  job.Name,
-			Error: err,
-		}
-	}
-
-	filePath := filepath.Join(backupDir, job.Name+".sql.gz")
-
-	fileWriter, err := local.CreateFile(filePath)
-	if err != nil {
-		return core.BackupResult{
-			Name:  job.Name,
-			Error: err,
-		}
-	}
-
-	defer fileWriter.Close()
-
-	err = compression.CompressStream(dumpStream, fileWriter)
+	err = e.storage.Save(ctx, job.Name+".sql.gz", pr)
 	if err != nil {
 		return core.BackupResult{
 			Name:  job.Name,
